@@ -1,0 +1,44 @@
+# Binaries & APKs (Exceeds GitHub 100MB limit)
+*.apk
+*.aab
+proxyproof.apk
+dashboard/public/*.apk
+
+# Flutter & Dart
+mobile/build/
+mobile/.dart_tool/
+mobile/.flutter-plugins
+mobile/.flutter-plugins-dependencies
+mobile/.packages
+mobile/android/.gradle/
+mobile/android/local.properties
+mobile/android/app/build/
+
+# Node & Dashboard
+dashboard/node_modules/
+dashboard/dist/
+dashboard/.env.local
+
+# Python & Backend
+**/__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.db
+*.sqlite*
+backend/data/*.db
+backend/data/*.sqlite*
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Logs & Temp
+*.log
+.DS_Store
+Thumbs.db
+
+# IDE & Editor
+.vscode/
+.idea/
+*.iml
