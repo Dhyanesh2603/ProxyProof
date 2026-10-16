@@ -120,6 +120,19 @@ export const api = {
     return `${API_BASE}/attendance/export${sessionId ? `?session_id=${sessionId}` : ''}`;
   },
 
+  manualMarkAttendance: async (data: { session_id: number; student_id: number; status?: string; note?: string }) => {
+    return request<{ success: boolean; id: number; status: string; marked_at: string }>('/attendance/manual', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  removeAttendance: async (attendanceId: number) => {
+    return request<{ success: boolean; message: string }>(`/attendance/${attendanceId}`, {
+      method: 'DELETE',
+    });
+  },
+
   // Devices
   getDeviceRequests: async () => {
     return request<DeviceRequest[]>('/devices/requests');

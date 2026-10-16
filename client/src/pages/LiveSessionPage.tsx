@@ -11,13 +11,16 @@ import {
   XCircle,
   RefreshCw,
   Search,
-  Filter
+  Filter,
+  UserPlus,
+  Trash2
 } from 'lucide-react';
 import { api } from '../services/api';
 import { LiveWebSocketClient } from '../services/websocket';
 import { SessionDetail, AttendanceRecord } from '../types';
 import { StatsCard } from '../components/StatsCard';
 import { Badge } from '../components/Badge';
+import { Modal } from '../components/Modal';
 import { TokenBeaconSimulator } from '../components/TokenBeaconSimulator';
 
 interface LiveSessionPageProps {
@@ -36,6 +39,13 @@ export const LiveSessionPage: React.FC<LiveSessionPageProps> = ({
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [timeRemaining, setTimeRemaining] = useState<number>(0);
   const [wsClient, setWsClient] = useState<LiveWebSocketClient | null>(null);
+
+  // Manual mark modal state
+  const [showManualModal, setShowManualModal] = useState<boolean>(false);
+  const [manualStudentId, setManualStudentId] = useState<string>('1');
+  const [manualStatus, setManualStatus] = useState<string>('PRESENT');
+  const [manualNote, setManualNote] = useState<string>('');
+  const [manualSubmitting, setManualSubmitting] = useState<boolean>(false);
 
   // Load active session
   useEffect(() => {
@@ -85,7 +95,6 @@ export const LiveSessionPage: React.FC<LiveSessionPageProps> = ({
 
     const unsubscribe = ws.subscribe((event) => {
       if (event.type === 'ATTENDANCE_MARKED' || event.type === 'ATTENDANCE_REJECTED') {
-        // Prepend new record to live table
         const newRecord: AttendanceRecord = {
           id: event.record.id,
           student_id: event.record.student_id,
@@ -100,7 +109,11 @@ export const LiveSessionPage: React.FC<LiveSessionPageProps> = ({
 
         setRecords((prev) => [newRecord, ...prev.filter((r) => r.id !== newRecord.id)]);
 
-        // Update session stats
+        if (event.stats && session) {
+          setSession((prev) => prev ? { ...prev, stats: event.stats } : prev);
+        }
+      } else if (event.type === 'ATTENDANCE_REMOVED') {
+        setRecords((prev) => prev.filter((r) => r.id !== event.attendance_id));
         if (event.stats && session) {
           setSession((prev) => prev ? { ...prev, stats: event.stats } : prev);
         }
@@ -147,6 +160,43 @@ export const LiveSessionPage: React.FC<LiveSessionPageProps> = ({
       setTimeRemaining(updated.remaining_seconds);
     } catch (err: any) {
       alert(`Failed to start session: ${err.message}`);
+    }
+  };
+
+  const handleManualMark = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!session) return;
+    setManualSubmitting(true);
+    try {
+      await api.manualMarkAttendance({
+        session_id: session.session_id,
+        student_id: parseInt(manualStudentId, 10),
+        status: manualStatus,
+        note: manualNote || 'Manual instructor override'
+      });
+      setShowManualModal(false);
+      setManualNote('');
+      const liveData = await api.getLiveAttendance(session.session_id);
+      setRecords(liveData.records || []);
+      setSession((prev) => prev ? { ...prev, stats: liveData.stats } : prev);
+    } catch (err: any) {
+      alert(`Manual mark failed: ${err.message}`);
+    } finally {
+      setManualSubmitting(false);
+    }
+  };
+
+  const handleRemoveRecord = async (attendanceId: number, studentName: string) => {
+    if (!window.confirm(`Revoke / remove attendance mark for ${studentName}?`)) return;
+    try {
+      await api.removeAttendance(attendanceId);
+      setRecords((prev) => prev.filter((r) => r.id !== attendanceId));
+      if (session) {
+        const liveData = await api.getLiveAttendance(session.session_id);
+        setSession((prev) => prev ? { ...prev, stats: liveData.stats } : prev);
+      }
+    } catch (err: any) {
+      alert(`Failed to remove attendance: ${err.message}`);
     }
   };
 
@@ -241,6 +291,14 @@ export const LiveSessionPage: React.FC<LiveSessionPageProps> = ({
               <span>Start Session</span>
             </button>
           ) : null}
+
+          <button
+            onClick={() => setShowManualModal(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-zinc-900 border border-zinc-700 text-zinc-200 hover:bg-zinc-800 text-xs font-medium transition-colors"
+          >
+            <UserPlus className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Manual Add</span>
+          </button>
 
           <a
             href={api.exportCsvUrl(session.session_id)}
@@ -348,12 +406,13 @@ export const LiveSessionPage: React.FC<LiveSessionPageProps> = ({
                 <th className="py-2.5 px-4">Status</th>
                 <th className="py-2.5 px-4">Reason / Notes</th>
                 <th className="py-2.5 px-4 text-right">Timestamp</th>
+                <th className="py-2.5 px-4 text-right">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-800/40">
               {filteredRecords.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-8 text-center text-xs text-zinc-500">
+                  <td colSpan={8} className="py-8 text-center text-xs text-zinc-500">
                     No attendance records detected for current criteria.
                   </td>
                 </tr>
@@ -361,7 +420,6 @@ export const LiveSessionPage: React.FC<LiveSessionPageProps> = ({
                 filteredRecords.map((r) => {
                   const isPresent = r.status === 'PRESENT';
                   const isLate = r.status === 'LATE';
-                  const isRejected = r.status === 'REJECTED';
 
                   return (
                     <tr key={r.id} className="hover:bg-zinc-900/40 transition-colors">
@@ -390,6 +448,15 @@ export const LiveSessionPage: React.FC<LiveSessionPageProps> = ({
                       <td className="py-2.5 px-4 text-right font-mono text-[11px] text-zinc-500">
                         {r.marked_at ? new Date(r.marked_at).toLocaleTimeString() : '---'}
                       </td>
+                      <td className="py-2.5 px-4 text-right">
+                        <button
+                          onClick={() => handleRemoveRecord(r.id, r.student_name)}
+                          title="Revoke / Remove Attendance"
+                          className="p-1 rounded text-zinc-500 hover:text-rose-400 hover:bg-zinc-800 transition-colors"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </td>
                     </tr>
                   );
                 })
@@ -404,6 +471,72 @@ export const LiveSessionPage: React.FC<LiveSessionPageProps> = ({
           <span className="font-mono">ProxyProof Anti-Spoofing Engine Active</span>
         </div>
       </div>
+
+      {/* Manual Mark Modal */}
+      <Modal
+        isOpen={showManualModal}
+        onClose={() => setShowManualModal(false)}
+        title="Manual Attendance Override"
+      >
+        <form onSubmit={handleManualMark} className="space-y-4">
+          <p className="text-xs text-zinc-400">
+            Manually record attendance for a student who was physically present but encountered device or battery issues.
+          </p>
+
+          <div>
+            <label className="block text-xs font-medium text-zinc-300 mb-1">Select Student</label>
+            <select
+              value={manualStudentId}
+              onChange={(e) => setManualStudentId(e.target.value)}
+              className="w-full bg-[#09090b] border border-[#27272a] rounded px-3 py-2 text-xs text-zinc-200 focus:outline-hidden focus:border-zinc-500"
+            >
+              <option value="1">Alice Smith (STU-2024-001)</option>
+              <option value="2">Bob Jones (STU-2024-002)</option>
+              <option value="3">Charlie Brown (STU-2024-003)</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-zinc-300 mb-1">Status Override</label>
+            <select
+              value={manualStatus}
+              onChange={(e) => setManualStatus(e.target.value)}
+              className="w-full bg-[#09090b] border border-[#27272a] rounded px-3 py-2 text-xs text-zinc-200 focus:outline-hidden focus:border-zinc-500"
+            >
+              <option value="PRESENT">PRESENT (Full Credit)</option>
+              <option value="LATE">LATE (Partial Credit)</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-zinc-300 mb-1">Reason / Note</label>
+            <input
+              type="text"
+              placeholder="e.g. Phone battery died, verified physically in class"
+              value={manualNote}
+              onChange={(e) => setManualNote(e.target.value)}
+              className="w-full bg-[#09090b] border border-[#27272a] rounded px-3 py-2 text-xs text-zinc-200 placeholder-zinc-600 focus:outline-hidden focus:border-zinc-500"
+            />
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2 border-t border-[#27272a]">
+            <button
+              type="button"
+              onClick={() => setShowManualModal(false)}
+              className="px-3 py-1.5 rounded text-xs text-zinc-400 hover:text-white"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={manualSubmitting}
+              className="px-4 py-1.5 rounded bg-white text-black text-xs font-bold hover:bg-zinc-200 disabled:opacity-50"
+            >
+              {manualSubmitting ? 'Recording...' : 'Commit Attendance'}
+            </button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 };

@@ -53,6 +53,48 @@ async def mark_attendance(
         "message": message
     }
 
+class ManualMarkRequest(BaseModel):
+    session_id: int
+    student_id: int
+    status: str = "PRESENT"
+    note: Optional[str] = "Manual mark by organizer"
+
+@router.post("/manual")
+async def manual_mark_attendance(
+    req: ManualMarkRequest,
+    db: Session = Depends(get_db),
+    organizer: User = Depends(get_current_organizer)
+):
+    try:
+        from app.models.attendance import AttendanceStatus
+        att_status = AttendanceStatus.PRESENT if req.status == "PRESENT" else AttendanceStatus.LATE
+        rec = await AttendanceService.manual_mark(
+            db=db,
+            session_id=req.session_id,
+            student_id=req.student_id,
+            status=att_status,
+            note=req.note or "Manual override"
+        )
+        return {
+            "success": True,
+            "id": rec.id,
+            "status": rec.status.value,
+            "marked_at": rec.marked_at.isoformat() if rec.marked_at else None
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+@router.delete("/{attendance_id}")
+async def remove_attendance_record(
+    attendance_id: int,
+    db: Session = Depends(get_db),
+    organizer: User = Depends(get_current_organizer)
+):
+    success = await AttendanceService.remove_attendance(db, attendance_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Attendance record not found")
+    return {"success": True, "message": "Attendance record revoked"}
+
 @router.get("/history")
 def get_attendance_history(
     db: Session = Depends(get_db),

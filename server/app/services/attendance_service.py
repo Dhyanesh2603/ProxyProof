@@ -267,3 +267,62 @@ class AttendanceService:
             }
         }
         await ws_manager.broadcast_session(session_id, event_payload)
+
+    @staticmethod
+    async def manual_mark(
+        db: Session,
+        session_id: int,
+        student_id: int,
+        status: AttendanceStatus = AttendanceStatus.PRESENT,
+        note: str = "Manually marked by organizer"
+    ) -> Attendance:
+        attendance_repo = AttendanceRepository(db)
+        student = db.query(User).filter(User.id == student_id).first()
+        if not student:
+            raise ValueError("Student not found")
+
+        existing = attendance_repo.get_by_session_and_student(session_id, student_id)
+        now_dt = utcnow()
+        if existing:
+            existing.status = status
+            existing.rejection_reason = None
+            existing.marked_at = now_dt
+            db.commit()
+            await AttendanceService._broadcast_event(db, session_id, "ATTENDANCE_MARKED", existing, student)
+            return existing
+
+        rec = Attendance(
+            session_id=session_id,
+            student_id=student.id,
+            device_id=None,
+            device_uuid=f"MANUAL-OVERRIDE-{student.id}",
+            rssi=-50,
+            status=status,
+            marked_at=now_dt,
+            rejection_reason=None
+        )
+        attendance_repo.create(rec)
+        await AttendanceService._broadcast_event(db, session_id, "ATTENDANCE_MARKED", rec, student)
+        return rec
+
+    @staticmethod
+    async def remove_attendance(
+        db: Session,
+        attendance_id: int
+    ) -> bool:
+        rec = db.query(Attendance).filter(Attendance.id == attendance_id).first()
+        if not rec:
+            return False
+        session_id = rec.session_id
+        db.delete(rec)
+        db.commit()
+
+        repo = AttendanceRepository(db)
+        stats = repo.count_session_stats(session_id)
+        await ws_manager.broadcast_session(session_id, {
+            "type": "ATTENDANCE_REMOVED",
+            "session_id": session_id,
+            "attendance_id": attendance_id,
+            "stats": stats
+        })
+        return True
