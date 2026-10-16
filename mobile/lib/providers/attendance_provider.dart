@@ -11,7 +11,7 @@ class AttendanceHistoryState {
   final String? error;
 
   AttendanceHistoryState({
-    this.percentage = 100.0,
+    this.percentage = 0.0,
     this.totalPresent = 0,
     this.totalAttempts = 0,
     this.records = const [],
@@ -31,7 +31,7 @@ class AttendanceHistoryNotifier extends StateNotifier<AttendanceHistoryState> {
     state = AttendanceHistoryState(isLoading: true);
     try {
       final res = await _api.getStudentAttendanceHistory();
-      final double pct = (res['percentage'] as num?)?.toDouble() ?? 100.0;
+      final double pct = (res['percentage'] as num?)?.toDouble() ?? 0.0;
       final int present = res['total_present'] ?? 0;
       final int total = res['total_attempts'] ?? 0;
       final List rawList = res['history'] ?? [];
