@@ -1,14 +1,10 @@
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 from app.models.user import User, UserRole
 from app.models.device import Device
 from app.models.course import Course
-from app.models.session import AttendanceSession, SessionStatus
-from app.models.attendance import Attendance, AttendanceStatus
 from app.models.device_request import DeviceRequest, DeviceRequestStatus
-from app.models.audit_log import AuditLog
 from app.security.hashing import get_password_hash
-from app.security.crypto_tokens import generate_session_secret
 
 def utcnow():
     return datetime.now(timezone.utc)
@@ -84,72 +80,7 @@ def seed_database(db: Session):
 
     db.flush()
 
-    # 4. Sessions
-    # Active Session in CS401
-    active_session = AttendanceSession(
-        course_id=course_cs401.id,
-        organizer_id=prof.id,
-        session_code="SES-40101",
-        secret_key=generate_session_secret(),
-        status=SessionStatus.ACTIVE,
-        duration_minutes=60,
-        rssi_threshold=-75,
-        token_rotation_interval=5,
-        started_at=utcnow() - timedelta(minutes=5)
-    )
-    # Past Completed Session in CS405
-    past_session = AttendanceSession(
-        course_id=course_cs405.id,
-        organizer_id=prof.id,
-        session_code="SES-40599",
-        secret_key=generate_session_secret(),
-        status=SessionStatus.ENDED,
-        duration_minutes=45,
-        rssi_threshold=-75,
-        token_rotation_interval=5,
-        started_at=utcnow() - timedelta(days=2, hours=1),
-        ended_at=utcnow() - timedelta(days=2, minutes=15)
-    )
-    db.add_all([active_session, past_session])
-    db.flush()
-
-    # 5. Attendance records
-    # Alice and Bob arrived in active session
-    att_alice = Attendance(
-        session_id=active_session.id,
-        student_id=student_objs[0].id,
-        device_id=device_objs[0].id,
-        device_uuid=device_objs[0].device_uuid,
-        token_used="e3b0c44298fc1c14",
-        rssi=-62,
-        status=AttendanceStatus.PRESENT,
-        marked_at=utcnow() - timedelta(minutes=3)
-    )
-    att_bob = Attendance(
-        session_id=active_session.id,
-        student_id=student_objs[1].id,
-        device_id=device_objs[1].id,
-        device_uuid=device_objs[1].device_uuid,
-        token_used="9f86d081884c7d65",
-        rssi=-69,
-        status=AttendanceStatus.PRESENT,
-        marked_at=utcnow() - timedelta(minutes=1)
-    )
-    # Rejected attempt: proxy attempt from Charlie with weak RSSI
-    att_charlie_weak = Attendance(
-        session_id=active_session.id,
-        student_id=student_objs[2].id,
-        device_id=device_objs[2].id,
-        device_uuid=device_objs[2].device_uuid,
-        token_used="5e884898da280471",
-        rssi=-84,
-        status=AttendanceStatus.REJECTED,
-        rejection_reason="PROXIMITY_RSSI_TOO_WEAK (-84 dBm < threshold -75 dBm)",
-        marked_at=utcnow() - timedelta(minutes=2)
-    )
-    db.add_all([att_alice, att_bob, att_charlie_weak])
-
-    # 6. Device Change Request
+    # 4. Device Change Request (Pending admin approval test)
     # Evan requested changing from old iPhone 14 to new iPad / Galaxy
     dev_req = DeviceRequest(
         user_id=student_objs[4].id,
@@ -161,25 +92,10 @@ def seed_database(db: Session):
     )
     db.add(dev_req)
 
-    # 7. Audit Logs
-    audit1 = AuditLog(
-        event_type="SESSION_STARTED",
-        severity="INFO",
-        user_id=prof.id,
-        details='{"session_id": 1, "session_code": "SES-40101", "course": "CS401"}',
-        ip_address="192.168.1.10"
-    )
-    audit2 = AuditLog(
-        event_type="OUT_OF_BOUNDS_RSSI_DETECTED",
-        severity="WARNING",
-        user_id=student_objs[2].id,
-        details='{"rssi": -84, "threshold": -75, "session_id": 1}',
-        ip_address="192.168.1.105"
-    )
-    db.add_all([audit1, audit2])
-
     db.commit()
-    print("Database successfully seeded with demo accounts:")
+    print("Database successfully seeded with zero-stat baseline accounts:")
     print("  Organizer: prof.smith@university.edu / Admin@1234")
     print("  Student 1: alice@university.edu / Student@1234")
     print("  Student 2: bob@university.edu / Student@1234")
+    print("  Courses: CS401, CS405")
+    print("  Sessions & Attendance: 0 records (Fully Dynamic)")
