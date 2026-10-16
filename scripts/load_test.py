@@ -5,7 +5,7 @@ import statistics
 import httpx
 from typing import List, Dict, Any
 
-DEFAULT_BASE_URL = "http://127.0.0.1:8000/api/v1"
+DEFAULT_BASE_URL = "http://127.0.0.1:8005/api/v1"
 
 async def register_student(client: httpx.AsyncClient, base_url: str, i: int) -> Dict[str, Any]:
     email = f"loadtest.student.{i}@university.edu"
@@ -101,9 +101,9 @@ async def run_load_test(num_students: int, concurrency: int, base_url: str, in_p
     target_url = base_url
     if in_process:
         import sys, os
-        backend_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "backend"))
-        if backend_dir not in sys.path:
-            sys.path.insert(0, backend_dir)
+        server_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "server"))
+        if server_dir not in sys.path:
+            sys.path.insert(0, server_dir)
         from app.main import app
         from app.database import Base, engine, SessionLocal
         from app.utils.seed_data import seed_database

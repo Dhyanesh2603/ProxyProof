@@ -2,7 +2,7 @@
 *.apk
 *.aab
 proxyproof.apk
-dashboard/public/*.apk
+client/public/*.apk
 
 # Flutter & Dart
 mobile/build/
@@ -14,12 +14,12 @@ mobile/android/.gradle/
 mobile/android/local.properties
 mobile/android/app/build/
 
-# Node & Dashboard
-dashboard/node_modules/
-dashboard/dist/
-dashboard/.env.local
+# Node & Web Client
+client/node_modules/
+client/dist/
+client/.env.local
 
-# Python & Backend
+# Python & Backend Server
 **/__pycache__/
 *.py[cod]
 *$py.class
@@ -27,8 +27,8 @@ dashboard/.env.local
 .Python
 *.db
 *.sqlite*
-backend/data/*.db
-backend/data/*.sqlite*
+server/data/*.db
+server/data/*.sqlite*
 .pytest_cache/
 .coverage
 htmlcov/

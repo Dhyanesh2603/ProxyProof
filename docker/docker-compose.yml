@@ -33,11 +33,11 @@ services:
       timeout: 5s
       retries: 5
 
-  backend:
+  server:
     build:
-      context: ../backend
+      context: ../server
       dockerfile: Dockerfile
-    container_name: proxyproof-backend
+    container_name: proxyproof-server
     restart: unless-stopped
     depends_on:
       postgres:
@@ -53,14 +53,14 @@ services:
     ports:
       - "8000:8000"
 
-  dashboard:
+  client:
     build:
-      context: ../dashboard
+      context: ../client
       dockerfile: Dockerfile
-    container_name: proxyproof-dashboard
+    container_name: proxyproof-client
     restart: unless-stopped
     depends_on:
-      - backend
+      - server
     ports:
       - "3000:80"
 

@@ -172,7 +172,7 @@ erDiagram
 
 ```
 d:\vinno_app\
-├── backend/
+├── server/
 │   ├── app/
 │   │   ├── api/            # REST Endpoints (auth, sessions, attendance, devices, analytics)
 │   │   ├── services/       # Business Logic (attendance_service, token_service, anomaly_service)
@@ -188,7 +188,7 @@ d:\vinno_app\
 │   ├── tests/              # Pytest test suite (7 comprehensive integration tests)
 │   ├── Dockerfile
 │   └── requirements.txt
-├── dashboard/
+├── client/
 │   ├── src/
 │   │   ├── pages/          # LiveSession, Sessions, AttendanceHistory, DeviceApproval, AuditLog, Analytics, Login
 │   │   ├── components/     # TokenBeaconSimulator, Navbar, StatsCard, Modal, Badge
@@ -202,7 +202,7 @@ d:\vinno_app\
 │   └── package.json
 ├── mobile/
 │   ├── lib/
-│   │   ├── screens/        # StudentHomeScreen, OrganizerSessionScreen, DeviceRegistration, Login
+│   │   ├── screens/        # StudentHomeScreen, OrganizerSessionScreen, DeviceRegistration, Login, Register
 │   │   ├── services/       # ble_scanner_service, ble_advertiser_service, device_info_service
 │   │   ├── providers/      # Riverpod state notifiers
 │   │   ├── widgets/        # ble_radar, status_badge, attendance_card, enterprise_card
@@ -211,9 +211,10 @@ d:\vinno_app\
 │   ├── pubspec.yaml
 │   └── README.md
 ├── scripts/
+│   ├── demo_walkthrough.py # Instant 5-scenario anti-proxy test harness
 │   └── load_test.py        # High-concurrency stress benchmark (100, 500, 1000 students)
 ├── docker/
-│   ├── docker-compose.yml  # Turnkey multi-container stack (Backend, Postgres, Redis, Dashboard)
+│   ├── docker-compose.yml  # Turnkey multi-container stack (Server, Client, Postgres, Redis)
 │   └── .env.example
 ├── docs/
 │   ├── ble_protocol.md     # BLE 26-byte frame specification and RF path loss model
@@ -227,29 +228,30 @@ d:\vinno_app\
 
 ## Quickstart & Local Setup
 
-### 1. Run Backend Standalone (Python 3.13)
+### 1. Run Server Standalone (Python 3.13)
 ```bash
-cd backend
+cd server
 python -m pip install -r requirements.txt
-python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+python -m uvicorn app.main:app --host 0.0.0.0 --port 8005 --reload
 ```
 The database will automatically initialize SQLite `proxyproof.db` and seed demo users:
 - **Organizer**: `prof.smith@university.edu` / `Admin@1234`
 - **Student 1**: `alice@university.edu` / `Student@1234`
 - **Student 2**: `bob@university.edu` / `Student@1234`
 
-### 2. Run Dashboard (React + Vite + TypeScript)
+### 2. Run Client Web Dashboard (React + Vite + TypeScript)
 ```bash
-cd dashboard
+cd client
 npm install
 npm run dev
 ```
 Open [http://localhost:5173](http://localhost:5173). The dashboard includes an **interactive in-browser BLE Beacon Simulator** to test token rotation and student attendance directly from the UI without physical phones.
 
-### 3. Run Backend Integration Test Suite
+### 3. Run Server Integration Test Suite
 ```bash
-python -m pytest backend/tests -v
+python -m pytest server/tests -v
 ```
+*(All 7 tests pass: registration, password hashing, HMAC determinism, grace window expiry, binary packing/unpacking, device mismatch blocking, and weak RSSI rejection).*
 *(All 7 tests pass: registration, password hashing, HMAC determinism, grace window expiry, binary packing/unpacking, device mismatch blocking, and weak RSSI rejection).*
 
 ---
