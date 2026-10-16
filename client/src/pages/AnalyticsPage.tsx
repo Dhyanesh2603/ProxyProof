@@ -112,7 +112,7 @@ export const AnalyticsPage: React.FC = () => {
               ) : (
                 reports.map((rep) => {
                   const total = rep.successful_attendance + rep.rejected_attempts;
-                  const rate = total > 0 ? Math.round((rep.successful_attendance / total) * 100) : 100;
+                  const rate = total > 0 ? Math.round((rep.successful_attendance / total) * 100) : 0;
 
                   return (
                     <tr key={rep.course_id} className="hover:bg-zinc-900/40 transition-colors">

@@ -242,7 +242,7 @@ export const LiveSessionPage: React.FC<LiveSessionPageProps> = ({
 
   const totalMarked = (session.stats?.present || 0) + (session.stats?.late || 0);
   const totalAttempts = totalMarked + (session.stats?.rejected || 0);
-  const successRate = totalAttempts > 0 ? Math.round((totalMarked / totalAttempts) * 100) : 100;
+  const successRate = totalAttempts > 0 ? Math.round((totalMarked / totalAttempts) * 100) : 0;
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
