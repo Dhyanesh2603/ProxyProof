@@ -106,7 +106,7 @@ def get_attendance_history(
         # Calculate student percentage
         total_present = sum(1 for r in records if r.status.value in ["PRESENT", "LATE"])
         total_sessions = db.query(AttendanceSession).count()
-        percentage = round((total_present / max(1, total_sessions)) * 100.0, 1) if total_sessions > 0 else 100.0
+        percentage = round((total_present / max(1, total_sessions)) * 100.0, 1) if total_sessions > 0 else 0.0
         
         items = []
         for r in records:
