@@ -42,3 +42,10 @@ Thumbs.db
 .vscode/
 .idea/
 *.iml
+
+# Private Developer Documentation (Never push to git/GitHub)
+docs_private/
+private_docs/
+*documentation*.html
+*.private.html
+documentation.html
