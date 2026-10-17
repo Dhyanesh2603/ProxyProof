@@ -1,8 +1,10 @@
-# Binaries & APKs (Exceeds GitHub 100MB limit)
+# Binaries & APKs (Exceeds GitHub 100MB limit without LFS)
 *.apk
 *.aab
 proxyproof.apk
 client/public/*.apk
+!releases/*.apk
+
 
 # Flutter & Dart
 mobile/build/
