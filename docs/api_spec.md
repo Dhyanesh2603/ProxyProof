@@ -91,6 +91,21 @@ Submit received BLE token and hardware UUID for proximity verification.
   }
   ```
 
+### `POST /attendance/manual` *(Organizer Only)*
+Manually record or adjust attendance status with instructor audit trail.
+- **Request Body**:
+  ```json
+  {
+    "session_id": 1,
+    "student_id": 2,
+    "status": "PRESENT",
+    "note": "Manual mark by organizer"
+  }
+  ```
+
+### `DELETE /attendance/{attendance_id}` *(Organizer Only)*
+Revoke or delete an invalid attendance record.
+
 ### `GET /attendance/history`
 Student past attendance records with overall percentage or organizer full class history.
 
@@ -121,7 +136,24 @@ Approve or reject device migration request.
 
 ---
 
-## 5. WebSockets (`/ws`)
+## 5. Analytics & Audit Logs (`/api/v1/analytics`)
+
+### `GET /analytics` *(Organizer Only)*
+System-wide metrics: total students, sessions, present/late/rejected attendance counts, and active registered devices.
+
+### `GET /analytics/audit-logs` *(Organizer Only)*
+Query the security audit trail with optional filtering by severity (`INFO`, `WARNING`, `CRITICAL`).
+
+---
+
+## 6. System Health (`/api/v1/health`)
+
+### `GET /health`
+Liveness check returning service status, timestamp, SQLite/PostgreSQL connection health, and Redis cache availability.
+
+---
+
+## 7. WebSockets (`/ws`)
 
 ### `/ws/sessions/{session_id}`
 Real-time session updates. Pushes events:
@@ -132,3 +164,4 @@ Real-time session updates. Pushes events:
 
 ### `/ws/events`
 Global organizer channel for security alerts and device change notifications.
+

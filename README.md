@@ -2,6 +2,88 @@
 
 > A secure, enterprise-grade Bluetooth Low Energy (BLE) attendance verification platform designed to guarantee physical student presence inside lecture halls through rotating cryptographic tokens, 1-to-1 hardware device binding, and server-side RF proximity validation.
 
+[![FastAPI](https://img.shields.io/badge/FastAPI-v0.115+-009688?style=flat&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
+[![Swagger UI](https://img.shields.io/badge/API_Docs-Swagger_UI-85EA2D?style=flat&logo=swagger&logoColor=black)](http://localhost:8005/docs)
+[![ReDoc](https://img.shields.io/badge/API_Docs-ReDoc-blue?style=flat&logo=readme&logoColor=white)](http://localhost:8005/redoc)
+[![API Specification](https://img.shields.io/badge/Spec-docs%2Fapi__spec.md-orange?style=flat&logo=markdown)](docs/api_spec.md)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
+---
+
+### 📌 Quick Links
+- 📖 [Interactive API Documentation & Endpoints](#interactive-api-documentation--endpoints)
+- 📐 [Architecture Overview](#architecture-overview)
+- 🔄 [BLE Workflow & Attendance Lifecycle](#ble-workflow--attendance-lifecycle)
+- 🗄️ [Entity-Relationship (ER) Diagram](#entity-relationship-er-diagram)
+- 📁 [Folder Structure](#folder-structure)
+- 🚀 [Quickstart & Local Setup](#quickstart--local-setup)
+- 🐳 [Turnkey Docker Deployment](#turnkey-docker-deployment)
+- 🧪 [Server Integration Test Suite](#3-run-server-integration-test-suite)
+- 🛡️ [Anti-Proxy Security Guarantees](#anti-proxy-security-guarantees)
+- 📚 [Private Developer Guide (Local)](file:///d:/vinno_app/documentation.html)
+
+---
+
+## Interactive API Documentation & Endpoints
+
+ProxyProof provides fully interactive OpenAPI / Swagger specifications, ReDoc documentation, raw JSON schema, and real-time WebSocket feeds:
+
+| Interface / Resource | Local Standalone (`:8005`) | Turnkey Docker (`:8000`) | Description |
+| :--- | :--- | :--- | :--- |
+| **Interactive Swagger UI** | [`http://localhost:8005/docs`](http://localhost:8005/docs) | [`http://localhost:8000/docs`](http://localhost:8000/docs) | Live browser-based OpenAPI explorer to test all endpoints with JWT Bearer auth |
+| **ReDoc Documentation** | [`http://localhost:8005/redoc`](http://localhost:8005/redoc) | [`http://localhost:8000/redoc`](http://localhost:8000/redoc) | Responsive, clean visual technical specification and payload models |
+| **OpenAPI Schema (JSON)** | [`http://localhost:8005/openapi.json`](http://localhost:8005/openapi.json) | [`http://localhost:8000/openapi.json`](http://localhost:8000/openapi.json) | Machine-readable OpenAPI 3.1.0 schema for Postman import and SDK generation |
+| **In-Repo API Reference** | [`docs/api_spec.md`](docs/api_spec.md) | [`docs/api_spec.md`](docs/api_spec.md) | Comprehensive markdown documentation of payloads, status codes, and query params |
+| **Session WebSocket** | `ws://localhost:8005/ws/sessions/{id}` | `ws://localhost:8000/ws/sessions/{id}` | Real-time session attendance stream (new attendees, rejections, status changes) |
+| **Global Events WebSocket** | `ws://localhost:8005/ws/events` | `ws://localhost:8000/ws/events` | Organizer broadcast stream for security anomalies, audit events, and device alerts |
+
+### REST API Endpoints Quick Reference
+
+All endpoints are prefixed with `/api/v1` and protected with standard JWT tokens (`Authorization: Bearer <TOKEN>`).
+
+#### 🔐 Authentication & Profile (`/api/v1/auth`)
+| Method | Endpoint | Access Level | Description |
+| :--- | :--- | :--- | :--- |
+| `POST` | `/api/v1/auth/register` | Public | Register new Organizer or Student account |
+| `POST` | `/api/v1/auth/login` | Public | Authenticate with email/password and obtain JWT access token |
+| `GET` | `/api/v1/auth/me` | Authenticated | Retrieve profile, role, student ID, and registered device metadata |
+
+#### 📡 Attendance Sessions (`/api/v1/sessions`)
+| Method | Endpoint | Access Level | Description |
+| :--- | :--- | :--- | :--- |
+| `POST` | `/api/v1/sessions` | Organizer | Create session with course ID, duration, RSSI threshold, and rotation |
+| `GET` | `/api/v1/sessions` | Authenticated | List all active and past sessions |
+| `GET` | `/api/v1/sessions/{id}` | Authenticated | Retrieve session metadata and live attendee metrics |
+| `POST` | `/api/v1/sessions/{id}/start` | Organizer | Activate session and start 5-second rotating HMAC-SHA256 token broadcaster |
+| `POST` | `/api/v1/sessions/{id}/end` | Organizer | Conclude session and lock attendance records |
+| `GET` | `/api/v1/sessions/{id}/token` | Authenticated | Get current rotating token, window index, and packed 26-byte BLE frame |
+
+#### 🎯 Attendance & Verification Pipeline (`/api/v1/attendance`)
+| Method | Endpoint | Access Level | Description |
+| :--- | :--- | :--- | :--- |
+| `POST` | `/api/v1/attendance/mark` | Student / Organizer | Submit BLE token, hardware UUID & RSSI for 8-step anti-proxy verification |
+| `GET` | `/api/v1/attendance/history` | Authenticated | Student personal attendance record & % or Organizer full class history |
+| `GET` | `/api/v1/attendance/live/{session_id}` | Organizer | Live attendance stream and breakdown (PRESENT, LATE, REJECTED) |
+| `POST` | `/api/v1/attendance/manual` | Organizer | Manually record or adjust student status with audit logging |
+| `DELETE` | `/api/v1/attendance/{attendance_id}` | Organizer | Revoke or remove invalid attendance entry |
+| `GET` | `/api/v1/attendance/export` | Organizer | Download attendance data as CSV (`?session_id=1`) |
+
+#### 📱 Device Binding & Hardware Security (`/api/v1/devices`)
+| Method | Endpoint | Access Level | Description |
+| :--- | :--- | :--- | :--- |
+| `POST` | `/api/v1/devices/register` | Student | Bind permanent physical phone UUID to student account (1-to-1) |
+| `GET` | `/api/v1/devices/my-device` | Student | Check current hardware registration status |
+| `POST` | `/api/v1/devices/change-request` | Student | Request hardware migration with student justification |
+| `GET` | `/api/v1/devices/requests` | Organizer | Review pending student hardware device migration requests |
+| `PUT` | `/api/v1/devices/approve/{request_id}` | Organizer | Approve or reject device migration request |
+
+#### 📊 Analytics & System Health (`/api/v1/analytics`, `/api/v1/health`)
+| Method | Endpoint | Access Level | Description |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/api/v1/analytics` | Organizer | System metrics: student count, total sessions, present rate, device stats |
+| `GET` | `/api/v1/analytics/audit-logs` | Organizer | Query security audit trail with severity filtering (`INFO`, `WARNING`, `CRITICAL`) |
+| `GET` | `/api/v1/health` | Public | System health check (database connection, Redis cache status, uptime) |
+
 ---
 
 ## Architecture Overview
@@ -251,7 +333,6 @@ Open [http://localhost:5173](http://localhost:5173). The dashboard includes an *
 ```bash
 python -m pytest server/tests -v
 ```
-*(All 7 tests pass: registration, password hashing, HMAC determinism, grace window expiry, binary packing/unpacking, device mismatch blocking, and weak RSSI rejection).*
 *(All 7 tests pass: registration, password hashing, HMAC determinism, grace window expiry, binary packing/unpacking, device mismatch blocking, and weak RSSI rejection).*
 
 ---
