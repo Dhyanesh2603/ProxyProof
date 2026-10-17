@@ -2,7 +2,9 @@
 
 ### Enterprise BLE Proximity Attendance Verification Platform
 
+[![Android APK](https://img.shields.io/badge/Download-Android%20APK-3DDC84?style=flat&logo=android&logoColor=white)](https://github.com/Dhyanesh2603/ProxyProof/raw/main/releases/proxyproof.apk)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688?style=flat&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
+[![Swagger UI](https://img.shields.io/badge/API_Docs-Swagger_UI-85EA2D?style=flat&logo=swagger&logoColor=black)](http://localhost:8005/docs)
 [![React](https://img.shields.io/badge/React-19.0-61DAFB?style=flat&logo=react&logoColor=black)](https://react.dev)
 [![Flutter](https://img.shields.io/badge/Flutter-3.x-02569B?style=flat&logo=flutter&logoColor=white)](https://flutter.dev)
 [![Python](https://img.shields.io/badge/Python-3.12%20%7C%203.13-3776AB?style=flat&logo=python&logoColor=white)](https://www.python.org)
@@ -16,6 +18,7 @@ ProxyProof is an enterprise-grade attendance verification platform designed to e
 
 ## Table of Contents
 
+- [Mobile Application Download (Android APK)](#mobile-application-download-android-apk)
 - [Problem Statement and Security Model](#problem-statement-and-security-model)
 - [System Architecture](#system-architecture)
 - [Physical Layer BLE Protocol](#physical-layer-ble-protocol)
@@ -29,6 +32,47 @@ ProxyProof is an enterprise-grade attendance verification platform designed to e
 - [Production Deployment with Docker](#production-deployment-with-docker)
 - [Quality Assurance and Stress Testing](#quality-assurance-and-stress-testing)
 - [License](#license)
+
+---
+
+## Mobile Application Download (Android APK)
+
+The student mobile client application is compiled as an Android Package (`.apk`) and hosted directly within this repository via Git LFS:
+
+| Asset | Target Platform | Link | Description |
+| :--- | :--- | :--- | :--- |
+| **Production APK (Direct Download)** | Android 8.0+ (API 26+) | [Download proxyproof.apk](https://github.com/Dhyanesh2603/ProxyProof/raw/main/releases/proxyproof.apk) | Direct raw binary download via GitHub Git LFS (`releases/proxyproof.apk`) |
+| **Repository Asset View** | Android 8.0+ (API 26+) | [View in Repository](https://github.com/Dhyanesh2603/ProxyProof/blob/main/releases/proxyproof.apk) | GitHub file viewer with metadata and direct download button |
+| **Release Tag (v1.0.0)** | Android 8.0+ (API 26+) | [GitHub Release v1.0.0](https://github.com/Dhyanesh2603/ProxyProof/releases/tag/v1.0.0) | Release archive and build tag |
+| **Local Web Console Download** | Android 8.0+ (API 26+) | `http://localhost:5173/proxyproof.apk` | Available directly from the running web client dashboard |
+
+**Binary Verification**:
+- **File Name**: `proxyproof.apk`
+- **File Size**: `146.8 MB (153,961,121 bytes)`
+- **SHA-256**: `E8DD314DFEA2CBF2D928F503DA996BDD7828E3744073D879B8A1303E88CB0094`
+
+### Installation Instructions
+
+#### Option 1: Direct Smartphone Installation
+1. Open the direct download link [https://github.com/Dhyanesh2603/ProxyProof/raw/main/releases/proxyproof.apk](https://github.com/Dhyanesh2603/ProxyProof/raw/main/releases/proxyproof.apk) on your Android device.
+2. Tap the downloaded file in your browser downloads or Notification shade.
+3. If prompted by Android OS, permit "Install Unknown Apps" for your browser.
+4. Open **ProxyProof** and allow Bluetooth and Location permissions when requested (required by Android OS for BLE beacon reception).
+
+#### Option 2: Installation via Android Debug Bridge (ADB)
+```bash
+# Connect Android smartphone via USB with USB Debugging enabled
+adb install -r releases/proxyproof.apk
+```
+
+#### Connecting to Local Backend Server
+- **Via USB Reverse Tunneling (Recommended)**:
+  ```powershell
+  adb reverse tcp:8005 tcp:8005
+  ```
+  The app connects to `http://127.0.0.1:8005/api/v1` automatically through the USB bridge.
+- **Via Local Wi-Fi Subnet**:
+  In the mobile app login screen, tap the gear icon in the top right and enter your host machine local IP address (e.g., `http://192.168.1.100:8005/api/v1`).
 
 ---
 
