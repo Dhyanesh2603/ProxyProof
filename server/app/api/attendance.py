@@ -6,6 +6,7 @@ from app.database import get_db
 from app.models.user import User, UserRole
 from app.models.attendance import Attendance
 from app.models.session import AttendanceSession
+from app.models.device import Device
 from app.api.deps import get_current_user, get_current_student, get_current_organizer
 from app.services.attendance_service import AttendanceService
 from app.services.export_service import ExportService
@@ -25,8 +26,22 @@ async def mark_attendance(
     req: MarkAttendanceRequest,
     request: Request,
     db: Session = Depends(get_db),
-    student: User = Depends(get_current_student)
+    current_user: User = Depends(get_current_user)
 ):
+    # Resolve target student
+    if current_user.role == UserRole.STUDENT:
+        student = current_user
+    else:
+        # Organizer is executing via Dashboard Beacon Simulator
+        device = db.query(Device).filter(Device.device_uuid == req.device_uuid).first()
+        if device and device.user:
+            student = device.user
+        else:
+            # Fallback to test against first student for spoof / rogue UUID testing
+            student = db.query(User).filter(User.role == UserRole.STUDENT).first()
+            if not student:
+                raise HTTPException(status_code=400, detail="No student accounts available to simulate")
+
     client_ip = request.client.host if request.client else "127.0.0.1"
     success, record, message = await AttendanceService.process_attendance(
         db=db,

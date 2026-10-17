@@ -4,8 +4,8 @@ class AppConfig {
   static const String appName = 'ProxyProof';
   static const String appVersion = '1.0.0';
 
-  // Base API URL default: Android Emulator uses 10.0.2.2:8005
-  static const String defaultBaseUrl = 'http://10.0.2.2:8005/api/v1';
+  // Base API URL default: USB reverse tethering uses 127.0.0.1:8005
+  static const String defaultBaseUrl = 'http://127.0.0.1:8005/api/v1';
 
   static String _baseUrl = defaultBaseUrl;
   static String get baseUrl => _baseUrl;
@@ -19,7 +19,12 @@ class AppConfig {
 
   static Future<void> init() async {
     final prefs = await SharedPreferences.getInstance();
-    _baseUrl = prefs.getString('server_url') ?? defaultBaseUrl;
+    final saved = prefs.getString('server_url');
+    if (saved != null && !saved.contains('10.0.2.2')) {
+      _baseUrl = saved;
+    } else {
+      _baseUrl = defaultBaseUrl;
+    }
   }
 
   static Future<void> setBaseUrl(String url) async {
